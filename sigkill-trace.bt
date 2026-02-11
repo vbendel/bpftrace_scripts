@@ -1,0 +1,14 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("BEGIN TS=%llu\n", nsecs);
+}   
+
+kprobe:send_signal
+/ arg0 == 9 /
+{
+    $task = (struct task_struct *)arg2;
+    printf("%llu SIGKILL: sender=%s[%d] -> target_pid=%d\n",
+           nsecs, comm, pid, $task->pid);
+}
