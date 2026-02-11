@@ -1,0 +1,27 @@
+#!/usr/bin/env bpftrace
+
+kretprobe:d_alloc
+/retval != 0/
+{
+    $d = (struct dentry *)retval;
+
+    printf("%25llu PID: %10d  COMM: %20s | d_alloc path (leaf→root): ", nsecs, pid, comm);
+
+    $cur = $d;
+    $i = 0;
+
+    // Walk up to 10 levels to avoid verifier complaints
+    while (($cur != 0) && ($i < 10)) {
+        printf("/%s", str($cur->d_name.name));
+
+        if ($cur == $cur->d_parent) {
+            break; // reached root
+        }
+
+        $cur = $cur->d_parent;
+        $i++;
+    }
+
+    printf("\n");
+}
+
